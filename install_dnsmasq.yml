@@ -1,0 +1,43 @@
+---
+- name: Instalar y configurar dnsmasq
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Actualizar lista de paquetes
+      apt:
+        update_cache: yes
+      retries: 3
+      delay: 5
+      ignore_errors: yes  # Continuar incluso si falla
+
+    - name: Instalar dnsmasq
+      apt:
+        name: dnsmasq
+        state: present
+      ignore_errors: yes  # Continuar incluso si falla
+
+    - name: Copiar archivo de configuración básico
+      copy:
+        content: |
+          # Configuración básica de dnsmasq
+          port=5353
+          domain-needed
+          bogus-priv
+          no-resolv
+          server=8.8.8.8
+          server=8.8.4.4
+        dest: /etc/dnsmasq.conf
+        mode: '0644'
+      notify: Reiniciar dnsmasq
+
+    - name: Asegurar que dnsmasq esté iniciado y habilitado
+      service:
+        name: dnsmasq
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Reiniciar dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted
